@@ -1,0 +1,48 @@
+name: Build and test
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  build-and-test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            openmp: "with-openmp"
+          - os: ubuntu-latest
+            openmp: "without-openmp"
+          - os: macos-latest
+            openmp: "with-openmp"
+          - os: macos-latest
+            openmp: "without-openmp"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up OpenMP
+        if: contains(matrix.openmp, 'with-openmp')
+        run: |
+          if [ "${{ runner.os }}" == "Linux" ]; then
+            sudo apt-get update && sudo apt-get install -y libomp-dev
+          elif [ "${{ runner.os }}" == "macOS" ]; then
+            brew install libomp
+          fi
+
+      - name: Build project
+        run: make
+
+      - name: Run tests
+        run: make test
+
